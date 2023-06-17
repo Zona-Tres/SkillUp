@@ -20,6 +20,8 @@ pub struct DynamicNft {
     pub owner: ActorId,
     pub transactions: HashMap<H256, NFTEvent>,
     pub dynamic_data: Vec<u8>,
+    pub is_available: HashMap<TokenId, bool>,
+    pub skills: HashMap<TokenId, Vec<String>>,
 }
 
 static mut CONTRACT: Option<DynamicNft> = None;
@@ -39,6 +41,7 @@ unsafe extern "C" fn init() {
             ..Default::default()
         },
         owner: msg::source(),
+        is_available: true,
         ..Default::default()
     };
     CONTRACT = Some(nft);
@@ -166,6 +169,18 @@ unsafe extern "C" fn handle() {
                 NFTEvent::Updated { data_hash }
             });
             msg::reply(payload, 0).expect("Error during replying with `NFTEvent::Updated`");
+        },
+        NFTAction::UpdateIsAvailable {
+            transaction_id,
+            is_available,
+        } => {
+            let payload = nft.process_transaction(transaction_id, |nft| {
+                nft.is_available = !nft.is_available;
+                let is_available: bool = nft.is_available;
+
+                NFTEvent::IsAvailable { is_available }
+            });
+            msg::reply(payload, 0).expect("Error during replying with `NFTEvent::Updated`");
         }
     };
 }
@@ -250,6 +265,7 @@ impl From<&DynamicNft> for IoNFT {
             owner,
             transactions,
             dynamic_data,
+            is_available
         } = value;
 
         let transactions = transactions
@@ -262,6 +278,7 @@ impl From<&DynamicNft> for IoNFT {
             owner: *owner,
             transactions,
             dynamic_data: dynamic_data.clone(),
+            is_available: *is_available,
         }
     }
 }

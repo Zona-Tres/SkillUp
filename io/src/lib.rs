@@ -74,6 +74,10 @@ pub enum NFTAction {
         transaction_id: u64,
         data: Vec<u8>,
     },
+    UpdateIsAvailable {
+        transaction_id: u64,
+        is_available: bool
+    }
 }
 
 #[derive(Debug, Encode, Decode, TypeInfo)]
@@ -106,6 +110,9 @@ pub enum NFTEvent {
     Updated {
         data_hash: H256,
     },
+    IsAvailable {
+        is_available: bool
+    },
 }
 
 #[derive(Debug, Clone, Default, Encode, Decode, TypeInfo)]
@@ -131,6 +138,7 @@ pub struct IoNFT {
     pub owner: ActorId,
     pub transactions: Vec<(H256, NFTEvent)>,
     pub dynamic_data: Vec<u8>,
+    pub is_available: bool,
 }
 
 impl From<&NFTState> for IoNFTState {
