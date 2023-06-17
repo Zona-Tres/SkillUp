@@ -19,6 +19,7 @@ pub struct DynamicNft {
     pub token_id: TokenId,
     pub owner: ActorId,
     pub transactions: HashMap<H256, NFTEvent>,
+    pub bio: String,
     pub dynamic_data: Vec<u8>,
     pub is_available: HashMap<TokenId, bool>,
     pub skills: HashMap<TokenId, Vec<String>>,
@@ -37,11 +38,11 @@ unsafe extern "C" fn init() {
             name: config.name,
             symbol: config.symbol,
             base_uri: config.base_uri,
+            bio: config.bio,
             royalties: config.royalties,
             ..Default::default()
         },
         owner: msg::source(),
-        is_available: true,
         ..Default::default()
     };
     CONTRACT = Some(nft);
@@ -172,11 +173,21 @@ unsafe extern "C" fn handle() {
         },
         NFTAction::UpdateIsAvailable {
             transaction_id,
-            is_available,
+            token_id
         } => {
             let payload = nft.process_transaction(transaction_id, |nft| {
-                nft.is_available = !nft.is_available;
-                let is_available: bool = nft.is_available;
+                
+                match nft.is_available.get(token_id) {
+                    Some(mut availability) =>  {
+                        availability = !availability;
+                        nft.is_available.set(token_id, availability)
+                    },
+                    None => {
+                        nft.is_available.set(token_id, true);
+                    } 
+                }
+                
+                let is_available: bool = nft.is_available.get(token_id);
 
                 NFTEvent::IsAvailable { is_available }
             });
@@ -265,20 +276,33 @@ impl From<&DynamicNft> for IoNFT {
             owner,
             transactions,
             dynamic_data,
-            is_available
+            is_available,
+            skills
         } = value;
 
         let transactions = transactions
             .iter()
             .map(|(key, event)| (*key, event.clone()))
             .collect();
+        
+        let is_available = is_available
+            .iter()
+            .map(|(key, event)| (*key, event.clone()))
+            .collect();
+
+        let skills = skills
+            .iter()
+            .map(|(key, event)| (*key, event.clone()))
+            .collect();
+
         Self {
             token: token.into(),
             token_id: *token_id,
             owner: *owner,
             transactions,
             dynamic_data: dynamic_data.clone(),
-            is_available: *is_available,
+            is_available,
+            skills
         }
     }
 }

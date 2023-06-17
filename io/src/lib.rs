@@ -74,10 +74,16 @@ pub enum NFTAction {
         transaction_id: u64,
         data: Vec<u8>,
     },
+    // SkillUp Actions
     UpdateIsAvailable {
         transaction_id: u64,
-        is_available: bool
+        token_id: TokenId,
+    },
+    UpdateSkills {
+        token_id: TokenId,
+        skill: String
     }
+
 }
 
 #[derive(Debug, Encode, Decode, TypeInfo)]
@@ -113,6 +119,9 @@ pub enum NFTEvent {
     IsAvailable {
         is_available: bool
     },
+    SkillUpdated {
+        skills: Vec<String>
+    }
 }
 
 #[derive(Debug, Clone, Default, Encode, Decode, TypeInfo)]
@@ -138,7 +147,8 @@ pub struct IoNFT {
     pub owner: ActorId,
     pub transactions: Vec<(H256, NFTEvent)>,
     pub dynamic_data: Vec<u8>,
-    pub is_available: bool,
+    pub is_available: HashMap<TokenId, bool>,
+    pub skills: HashMap<TokenId, Vec<String>>
 }
 
 impl From<&NFTState> for IoNFTState {
